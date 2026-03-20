@@ -1,446 +1,428 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>GeoTime</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="JudgePro"/>
+<meta name="theme-color" content="#f59e0b"/>
+<title>HackFusion Judge Pro</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#07090d;--panel:#0c1420;--border:#1a2d45;
-  --amber:#f0a500;--cyan:#00c8d4;--text:#c0d4e8;--dim:#3a5168;--green:#3ddc84;
-  --mono:'Share Tech Mono',monospace;--sans:'Barlow Condensed',sans-serif;
-}
-html,body{height:100%;overflow:hidden;background:var(--bg);font-family:var(--sans)}
-#app{display:flex;flex-direction:column;height:100vh}
-
-/* ── HEADER ── */
-#hdr{background:var(--panel);border-bottom:2px solid var(--border);flex-shrink:0;z-index:1000}
-.hr1{display:flex;align-items:center;gap:8px;padding:8px 12px}
-.ring{width:26px;height:26px;flex-shrink:0;border:2px solid var(--amber);border-radius:50%;
-  display:flex;align-items:center;justify-content:center;animation:glow 3s infinite}
-.ring::after{content:'';width:7px;height:7px;background:var(--amber);border-radius:50%}
-@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(240,165,0,.5)}50%{box-shadow:0 0 0 5px rgba(240,165,0,0)}}
-.logo{font-family:var(--mono);font-size:15px;letter-spacing:3px;color:var(--amber)}
-.sub{font-family:var(--mono);font-size:7px;color:var(--dim);letter-spacing:2px}
-.hr2{display:flex;padding:0 12px 8px;gap:0}
-#si{flex:1;min-width:0;background:var(--bg);border:1px solid var(--border);border-right:none;
-  color:var(--text);padding:9px 12px;font-family:var(--mono);font-size:12px;outline:none}
-#si:focus{border-color:var(--cyan)}
-#si::placeholder{color:var(--dim);font-size:11px}
-#sb{background:var(--amber);color:var(--bg);border:none;padding:9px 16px;
-  font-family:var(--sans);font-weight:700;font-size:13px;cursor:pointer;letter-spacing:1px;flex-shrink:0}
-#sb:active{opacity:.8}
-
-/* ── MAP ── */
-#map{flex:1;position:relative;min-height:0}
-#leafmap{width:100%;height:100%}
-
-/* ── YEAR OVERLAY — clean, bottom-left, no clutter ── */
-#yearOverlay{
-  position:absolute;bottom:60px;left:16px;z-index:800;pointer-events:none;
-}
-#yearNum{
-  font-family:var(--mono);font-size:72px;font-weight:bold;
-  color:#fff;line-height:1;
-  text-shadow:0 0 30px rgba(0,0,0,.8),0 2px 8px rgba(0,0,0,1);
-  opacity:.85;
-  transition:opacity .4s;
-}
-#yearNum.fade{opacity:0}
-#yearBar{
-  width:0%;height:3px;background:var(--amber);
-  margin-top:6px;
-  transition:width linear;
-}
-
-/* ── BOTTOM CONTROLS ── */
-#ctrl{
-  position:absolute;bottom:0;left:0;right:0;z-index:900;
-  background:linear-gradient(transparent,rgba(7,9,13,.95));
-  padding:8px 12px 10px;
-}
-.crow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.cbtn{width:34px;height:34px;background:rgba(13,20,32,.9);border:1px solid var(--border);
-  color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:all .15s;border-radius:2px;flex-shrink:0}
-.cbtn:hover{border-color:var(--amber);color:var(--amber)}
-.cbtn.pl{border-color:var(--green);color:var(--green)}
-.spsel{background:rgba(13,20,32,.9);border:1px solid var(--border);color:var(--text);
-  font-family:var(--mono);font-size:11px;padding:4px 8px;outline:none;cursor:pointer;border-radius:2px}
-.spsel option{background:#0c1420;color:var(--text)}
-.tl{flex:1;min-width:120px;position:relative;height:20px;cursor:pointer}
-.tl-track{position:absolute;top:50%;left:0;right:0;height:3px;background:var(--border);transform:translateY(-50%)}
-.tl-fill{height:100%;background:var(--amber);width:0%;transition:width linear}
-.tl-thumb{position:absolute;top:50%;width:14px;height:14px;background:var(--amber);border-radius:50%;
-  transform:translate(-50%,-50%);left:0%;box-shadow:0 0 6px rgba(240,165,0,.6)}
-.yr-ticks{display:flex;justify-content:space-between;margin-top:2px}
-.yr-tick{font-family:var(--mono);font-size:9px;color:var(--dim);cursor:pointer;padding:2px 0}
-.yr-tick.on{color:var(--amber)}
-.yr-tick:hover{color:var(--text)}
-
-/* ── SEARCH DROPDOWN ── */
-#sd{display:none;position:fixed;background:var(--panel);border:1px solid var(--cyan);
-  border-top:none;z-index:9999;max-height:240px;overflow-y:auto;
-  box-shadow:0 12px 32px rgba(0,0,0,.95)}
-#sd.on{display:block}
-.si{padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--text);
-  border-bottom:1px solid var(--border);cursor:pointer;line-height:1.5}
-.si:hover,.si.hi{background:#0f1d2e;color:var(--cyan)}
-
-/* hide leaflet attribution */
-.leaflet-control-attribution{display:none!important}
-.leaflet-control-zoom{border:1px solid var(--border)!important}
-.leaflet-control-zoom a{background:var(--panel)!important;color:var(--text)!important;border-color:var(--border)!important}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%;background:#07090e;font-family:'Courier New',monospace;color:#dde3ef;overscroll-behavior:none}
+  input,textarea,select,button{font-family:'Courier New',monospace}
+  ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:#1a2035;border-radius:2px}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:5px;border-radius:3px;outline:none;background:#1a2035}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid #07090e}
+  textarea{resize:vertical}
+  @keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}.fi{animation:fi .25s ease forwards}
+  #app{max-width:600px;margin:0 auto;min-height:100vh}
 </style>
 </head>
 <body>
-<div id="app">
+<div id="app"></div>
+<script>
+// PWA Setup
+if('serviceWorker' in navigator){
+  const c=`const C='hfj-v1';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('activate',e=>{self.clients.claim();});self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});`;
+  navigator.serviceWorker.register(URL.createObjectURL(new Blob([c],{type:'text/javascript'}))).catch(()=>{});
+}
+(function(){
+  const svg=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='90' fill='%2307090e'/><text x='256' y='210' font-size='160' text-anchor='middle' dominant-baseline='middle' font-family='serif'>%E2%9A%96%EF%B8%8F</text><rect x='80' y='310' width='352' height='4' fill='%23f59e0b' rx='2'/><text x='256' y='370' font-size='50' text-anchor='middle' font-family='monospace' font-weight='bold' fill='%23f59e0b'>JUDGE PRO</text><text x='256' y='420' font-size='25' text-anchor='middle' font-family='monospace' fill='%23475569'>HACKFUSION 2026</text></svg>`;
+  const ic='data:image/svg+xml,'+svg;
+  const mf={name:'HackFusion Judge Pro',short_name:'JudgePro',start_url:'.',display:'standalone',background_color:'#07090e',theme_color:'#f59e0b',icons:[{src:ic,sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]};
+  const l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(new Blob([JSON.stringify(mf)],{type:'application/json'}));document.head.appendChild(l);
+  const a=document.createElement('link');a.rel='apple-touch-icon';a.href=ic;document.head.appendChild(a);
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback}=React;
+const A="#f59e0b",BG="#07090e",CARD="#0d1117",BD="#1a2035",DIM="#475569",TX="#dde3ef",GR="#4ade80",RD="#ef4444",BL="#60a5fa";
+const CATS=["Hardware / IoT / Embedded Systems","Robotics & Drones / UAVs","AI / ML / Computer Vision / NLP","Sustainable Tech / Green Energy","Agrotech / Waste-to-Wealth / Rural","Software / SaaS / Web / Mobile","Open Category / Other Innovation"];
+const CR=[{key:"innovation",label:"Innovation",icon:"💡",color:"#a78bfa",w:25},{key:"technical",label:"Technical",icon:"⚙️",color:BL,w:25},{key:"impact",label:"Impact",icon:"🌍",color:GR,w:20},{key:"scalability",label:"Scalability",icon:"📈",color:A,w:15},{key:"presentation",label:"Presentation",icon:"🎤",color:"#f472b6",w:15}];
+const eS=()=>({innovation:0,technical:0,impact:0,scalability:0,presentation:0});
+const wt=s=>{if(!s)return 0;return parseFloat((CR.reduce((t,c)=>t+(s[c.key]||0)*c.w,0)/100).toFixed(1));};
+const mk=(n="",c=CATS[0],d="")=>({id:Date.now().toString(36)+Math.random().toString(36).slice(2),name:n,cat:c,desc:d,stallNotes:"",pitchNotes:"",visited:false,manualScores:eS(),aiScores:null,aiAnalysis:"",aiVerdict:"",finalScores:null,finalized:false});
+const LS={g:(k,d=null)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}},s:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}}};
+const QB={"Hardware / IoT / Embedded Systems":{q:["Walk me through end-to-end data flow — sensor to decision. What happens at each layer?","What protocol and why over LoRa, Zigbee, or BLE?","How does it behave when network drops? Show the offline/edge logic.","What is power consumption and realistic battery life in deployment?","How do you handle sensor calibration drift?","Security model — auth, encryption, OTA updates?","1,000 unit deployment cost — walk me through your BOM."],r:["Demo only on local WiFi — no field deployment data","Cannot explain what happens when a node loses connectivity","Power tested on bench only","No security model — firmware unencrypted"],p:"Push on real-world failure modes — sensor drift, connectivity loss, power in field conditions."},"Robotics & Drones / UAVs":{q:["Demonstrate a failure scenario — noisy sensor input?","How does your autonomy stack handle edge cases not in training?","Obstacle avoidance latency detect-to-react? Benchmarked how?","Walk through safety kill-switch and fail-safe architecture.","Regulatory compliance — DGCA approvals, geofencing?","Localization accuracy indoors vs outdoors without GPS?","Onboard vs offboard compute — latency implications?"],r:["No fail-safe — safety assumed not engineered","Only tested in lab, no real-world trials","Unaware of regulatory requirements","Autonomy breaks with simple unexpected obstacle"],p:"Test safety — simulate a sensor failure live."},"AI / ML / Computer Vision / NLP":{q:["Accuracy on a held-out test set it has NEVER seen?","How did you handle class imbalance, data leakage, overfitting?","Performance on adversarial or out-of-distribution inputs?","Full ML pipeline — collection, labeling, training, validation, deployment?","Dataset size and real-world diversity assurance?","Inference latency and compute cost at production scale?","How do you detect and handle model drift post-deployment?"],r:["Accuracy on training data, not a test set","Dataset under 500 samples or not representative","Cannot explain model predictions","No plan for monitoring or retraining"],p:"Ask them to show the model failing — every strong ML project knows where it breaks."},"Sustainable Tech / Green Energy":{q:["Measurable impact — CO₂ saved, energy generated, waste reduced?","Lifecycle cost vs status quo it replaces?","Economic payback period for an end user?","Performance under variable conditions — weather, seasons?","Durability and maintenance cost over 5–10 years?","Life Cycle Assessment conducted or referenced?","First buyer and regulatory pathway?"],r:["Environmental claims with no measurement methodology","Works only under ideal conditions","Economic model ignores total cost of ownership","No LCA — may cost more environmentally than it saves"],p:"Challenge every impact number — ask for methodology behind each metric."},"Agrotech / Waste-to-Wealth / Rural":{q:["Tested with actual farmers? Their feedback?","Works in areas with poor or no internet?","Total adoption cost for a small farmer?","Accounts for local language and literacy levels?","Crop types or waste streams validated beyond demo?","Input-to-output value ratio?","Integration with government schemes or agri supply chains?"],r:["Designed without talking to actual end users","Requires internet/smartphone target users don't have","Cost too high without subsidy","Only tested in one location or season"],p:"Ask when they last spoke to a farmer — field validation separates strong projects from ideas."},"Software / SaaS / Web / Mobile":{q:["Real users beyond your team? Show usage analytics.","Architecture under 10x load — will it hold?","Data privacy and compliance handling?","Customer acquisition cost and churn from beta?","Key user workflow live with data entered NOW.","Authentication and common vulnerability handling?","Monetization model — have users committed to pay?"],r:["No real users — only internal testing","Single server, no redundancy or scaling plan","No privacy policy despite handling user data","Demo uses pre-seeded data — breaks with fresh input"],p:"See it work with data entered live — the gap between demo and reality is where apps fail."},"Open Category / Other Innovation":{q:["Specific problem and who experiences it most?","How did you validate this problem before building?","What alternatives exist and why is yours better?","Single most important technical innovation?","How does it work outside demo — what breaks first?","Path from prototype to deployment in 12 months?","What would you change with 6 more months and ₹5 lakhs?"],r:["Problem statement vague — no measurable pain point","No competitive analysis","Works only under demo conditions","No clear user defined"],p:"Ask when they last spoke to a potential user — real research separates strong projects."}};
+const gQB=c=>QB[c]||QB["Open Category / Other Innovation"];
+let _key="";
+const sKey=k=>{_key=k?k.trim():"";};
+const pN=(t,k,d=6)=>{const m=t.match(new RegExp(k+"\\s*[:\\-]\\s*(\\d+(?:\\.\\d+)?)","i"));return m?Math.min(10,Math.max(0,parseFloat(m[1]))):d;};
+const pS=(t,k,d="")=>{const m=t.match(new RegExp(k+"\\s*[:\\-]\\s*(.+)","i"));return m?m[1].trim():d;};
+async function ai(prompt){
+  if(!_key)throw new Error("NO_KEY");
+  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":_key,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,messages:[{role:"user",content:prompt}]})});
+  const txt=await res.text();
+  let d;try{d=JSON.parse(txt);}catch{throw new Error("Bad response: "+txt.slice(0,60));}
+  if(d.error)throw new Error(d.error.message||"API error");
+  const o=(d.content||[]).map(b=>b.text||"").join("").trim();
+  if(!o)throw new Error("Empty AI response");
+  return o;
+}
 
-  <div id="hdr">
-    <div class="hr1">
-      <div class="ring"></div>
-      <div><div class="logo">GEOTIME</div><div class="sub">EARTH CHANGE VISUALIZER · NASA MODIS</div></div>
-    </div>
-    <div class="hr2">
-      <input id="si" type="text" placeholder="Search any city, landmark, region…"
-        autocomplete="off" autocorrect="off" spellcheck="false"/>
-      <button id="sb">LOCATE</button>
-    </div>
-  </div>
+// ── PDF Export ────────────────────────────────────────────────────────────────
+function xPDF(teams){
+  const ranked=[...teams].filter(t=>t.finalScores&&wt(t.finalScores)>0).sort((a,b)=>wt(b.finalScores)-wt(a.finalScores));
+  const now=new Date().toLocaleString("en-IN");
+  const medals=["🥇","🥈","🥉"];
+  const ck=["innovation","technical","impact","scalability","presentation"];
+  const cl=["Innovation","Technical","Impact","Scalability","Presentation"];
+  const cc=["#7c3aed","#2563eb","#16a34a","#d97706","#db2777"];
+  const cw=[25,25,20,15,15];
+  const cards=ranked.map((t,i)=>`<div style="break-inside:avoid;margin-bottom:20px;border:1px solid #d1d5db;border-radius:10px;overflow:hidden"><div style="background:${i===0?"#1e1b4b":i===1?"#1e3a5f":"#1a2530"};padding:12px 16px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:14px;font-weight:bold;color:#fff">${medals[i]||"#"+(i+1)} ${t.name}</div><div style="font-size:10px;color:#94a3b8;margin-top:2px">${t.cat}</div></div><div style="text-align:right"><div style="font-size:28px;font-weight:bold;color:#f59e0b">${wt(t.finalScores)}</div><div style="font-size:10px;color:#64748b">/10</div></div></div><div style="padding:12px 16px;background:#fff">${t.desc?`<p style="color:#374151;font-size:11px;margin:0 0 10px;font-style:italic">${t.desc}</p>`:""}<table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:11px"><thead><tr style="background:#f8fafc"><th style="padding:6px 8px;text-align:left;border-bottom:2px solid #e2e8f0;color:#475569">Criterion</th><th style="padding:6px 8px;text-align:center;border-bottom:2px solid #e2e8f0;color:#475569">Wt</th><th style="padding:6px 8px;text-align:center;border-bottom:2px solid #e2e8f0;color:#f59e0b">Manual</th><th style="padding:6px 8px;text-align:center;border-bottom:2px solid #e2e8f0;color:#2563eb">AI</th><th style="padding:6px 8px;text-align:center;border-bottom:2px solid #e2e8f0;color:#16a34a;background:#f0fdf4">Final</th></tr></thead><tbody>${ck.map((k,ci)=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 8px;color:${cc[ci]};font-weight:600">${cl[ci]}</td><td style="padding:6px 8px;text-align:center;color:#64748b">${cw[ci]}%</td><td style="padding:6px 8px;text-align:center;font-weight:bold;color:#f59e0b">${t.manualScores[k]||0}</td><td style="padding:6px 8px;text-align:center;font-weight:bold;color:#2563eb">${t.aiScores?t.aiScores[k]||0:"—"}</td><td style="padding:6px 8px;text-align:center;font-weight:bold;color:#16a34a;font-size:13px;background:#f0fdf4">${t.finalScores?t.finalScores[k]||0:"—"}</td></tr>`).join("")}</tbody></table>${t.aiAnalysis?`<div style="background:#eff6ff;border-left:4px solid #2563eb;padding:8px 10px;border-radius:0 6px 6px 0;font-size:11px;color:#1e40af;margin-bottom:8px"><strong>AI:</strong> ${t.aiAnalysis}</div>`:""}</div></div>`).join("");
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>HackFusion 2026 Results</title><style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;padding:0;background:#fff}@media print{.np{display:none!important}}@page{margin:12mm;size:A4}.pb{position:fixed;top:12px;right:12px;background:#f59e0b;color:#000;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:bold}</style></head><body><button class="pb np" onclick="window.print()">🖨 Save / Print PDF</button><div style="max-width:780px;margin:0 auto;padding:20px"><div style="text-align:center;margin-bottom:24px;padding:20px;background:linear-gradient(135deg,#07090e,#0a0f1e);border-radius:10px;color:#fff"><div style="font-size:9px;letter-spacing:4px;color:#f59e0b;margin-bottom:4px">HACKFUSION 2026 · NATIONAL LEVEL PROJECT EXPO</div><div style="font-size:24px;font-weight:bold">⚖️ HackFusion Judge Pro — Results</div><div style="font-size:10px;color:#64748b;margin-top:6px">${now} · ${teams.length} teams · ${ranked.length} scored · ${teams.filter(t=>t.finalized).length} finalized</div></div><h2 style="font-size:15px;color:#1e293b;border-bottom:3px solid #f59e0b;padding-bottom:5px;margin-bottom:14px">📊 Score Summary</h2><table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:11px"><thead><tr style="background:#1e293b;color:#fff"><th style="padding:9px 10px;text-align:left">Rank</th><th style="padding:9px 10px;text-align:left">Team / Project</th><th style="padding:9px 10px;text-align:left">Category</th><th style="padding:9px 10px;text-align:center;color:#f59e0b">Manual</th><th style="padding:9px 10px;text-align:center;color:#93c5fd">AI</th><th style="padding:9px 10px;text-align:center;background:#f59e0b;color:#000">Final</th><th style="padding:9px 10px;text-align:center">Status</th></tr></thead><tbody>${ranked.map((t,i)=>`<tr style="background:${i%2===0?"#f8fafc":"#fff"};border-bottom:1px solid #e2e8f0"><td style="padding:9px 10px;font-size:16px">${medals[i]||"#"+(i+1)}</td><td style="padding:9px 10px;font-weight:bold;color:#0f172a">${t.name}</td><td style="padding:9px 10px;color:#475569;font-size:10px">${t.cat.split("/")[0].trim()}</td><td style="padding:9px 10px;text-align:center;color:#f59e0b;font-weight:bold">${wt(t.manualScores)||"—"}</td><td style="padding:9px 10px;text-align:center;color:#2563eb;font-weight:bold">${t.aiScores?wt(t.aiScores):"—"}</td><td style="padding:9px 10px;text-align:center;font-size:16px;font-weight:bold;color:${i===0?"#f59e0b":i===1?"#94a3b8":i===2?"#b45309":"#0f172a"}">${wt(t.finalScores)}</td><td style="padding:9px 10px;text-align:center"><span style="font-size:9px;padding:2px 7px;border-radius:10px;background:${t.finalized?"#dcfce7":"#fef9c3"};color:${t.finalized?"#16a34a":"#ca8a04"}">${t.finalized?"FINAL":"SCORED"}</span></td></tr>`).join("")}</tbody></table><h2 style="font-size:15px;color:#1e293b;border-bottom:3px solid #f59e0b;padding-bottom:5px;margin-bottom:14px">📋 Detailed Scorecards</h2>${cards||"<p style='color:#94a3b8'>No scored teams yet.</p>"}<div style="text-align:center;margin-top:24px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8">Generated by HackFusion Judge Pro · Built with Claude AI · Anthropic</div></div></body></html>`;
+  const w=window.open("","_blank");
+  if(w){w.document.write(html);w.document.close();}else alert("Allow popups to open PDF report.");
+}
 
-  <div id="map">
-    <div id="leafmap"></div>
+// ── CSV Export ────────────────────────────────────────────────────────────────
+function xCSV(teams){
+  const ck=["innovation","technical","impact","scalability","presentation"];
+  const cl=["Innovation","Technical","Impact","Scalability","Presentation"];
+  const e=v=>{const s=String(v==null?"":v);return(s.includes(",")||s.includes('"')||s.includes("\n"))?`"${s.replace(/"/g,'""')}"`:s;};
+  const h=["#","Team","Category","Description","Visited","Finalized",...cl.map(c=>c+" (Manual)"),"Manual Total",...cl.map(c=>c+" (AI)"),"AI Total",...cl.map(c=>c+" (Final)"),"Final Score","AI Analysis","AI Verdict","Stall Notes","Pitch Notes"];
+  const rows=teams.map((t,i)=>[i+1,t.name,t.cat,t.desc||"",t.visited?"Yes":"No",t.finalized?"Yes":"No",...ck.map(k=>t.manualScores[k]||0),wt(t.manualScores)||"",...ck.map(k=>t.aiScores?t.aiScores[k]||0:""),t.aiScores?wt(t.aiScores):"",...ck.map(k=>t.finalScores?t.finalScores[k]||0:""),t.finalScores?wt(t.finalScores):"",t.aiAnalysis||"",t.aiVerdict||"",t.stallNotes||"",t.pitchNotes||""]);
+  const csv=[h,...rows].map(r=>r.map(e).join(",")).join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"}));
+  a.download=`HackFusion2026_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
 
-    <!-- Clean year overlay — number + progress bar only -->
-    <div id="yearOverlay">
-      <div id="yearNum">2012</div>
-      <div id="yearBar"></div>
-    </div>
+// ── Shared UI ─────────────────────────────────────────────────────────────────
+const Crd=({ch,s={},onClick})=><div onClick={onClick} style={{background:CARD,border:`1px solid ${BD}`,borderRadius:"10px",padding:"14px",cursor:onClick?"pointer":"default",...s}}>{ch}</div>;
+const Lbl=({ch,c=A})=><div style={{fontSize:"9px",color:c,letterSpacing:"2px",marginBottom:"6px",fontWeight:"bold"}}>{ch}</div>;
+const Fi=({s={},...p})=><input style={{width:"100%",background:"#090b12",border:`1px solid ${BD}`,borderRadius:"6px",padding:"10px 12px",color:TX,fontSize:"13px",outline:"none",boxSizing:"border-box",...s}} {...p}/>;
+const Fta=({s={},...p})=><textarea style={{width:"100%",background:"#090b12",border:`1px solid ${BD}`,borderRadius:"6px",padding:"10px 12px",color:TX,fontSize:"13px",outline:"none",resize:"vertical",boxSizing:"border-box",...s}} {...p}/>;
+const Fsl=({ch,s={},...p})=><select style={{width:"100%",background:"#090b12",border:`1px solid ${BD}`,borderRadius:"6px",padding:"10px 12px",color:TX,fontSize:"13px",outline:"none",boxSizing:"border-box",...s}} {...p}>{ch}</select>;
+function Btn({ch,onClick,loading,disabled,s={},v="primary",full}){
+  const bg=v==="primary"?A:v==="green"?GR:v==="danger"?RD:"transparent";
+  const co=v==="outline"?A:v==="danger"?"#fff":v==="green"?"#000":"#000";
+  const br=v==="danger"?RD:v==="green"?GR:A;
+  return <button onClick={onClick} disabled={loading||disabled} style={{background:bg,color:co,border:`1px solid ${br}`,borderRadius:"6px",padding:"10px 16px",cursor:(loading||disabled)?"not-allowed":"pointer",fontFamily:"'Courier New',monospace",fontWeight:"bold",fontSize:"11px",letterSpacing:"1px",opacity:(loading||disabled)?0.55:1,transition:"all .2s",width:full?"100%":"auto",whiteSpace:"nowrap",...s}}>{loading?"⏳ WAIT...":ch}</button>;
+}
+function Sld({val,onChange,color=A,disabled}){
+  return <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+    <input type="range" min="0" max="10" step="0.5" value={val} onChange={e=>onChange(parseFloat(e.target.value))} disabled={disabled} style={{flex:1,accentColor:color,cursor:disabled?"not-allowed":"pointer"}}/>
+    <span style={{color,fontWeight:"bold",fontSize:"18px",minWidth:"30px",textAlign:"right",fontVariantNumeric:"tabular-nums"}}>{val}</span>
+  </div>;
+}
+const Pill=({ch,c=A})=><span style={{fontSize:"9px",color:c,border:`1px solid ${c}40`,borderRadius:"20px",padding:"2px 8px",fontWeight:"bold",letterSpacing:"1px"}}>{ch}</span>;
+const Err=({m})=>m?<div style={{padding:"10px 12px",background:"#1a0808",border:`1px solid ${RD}40`,borderRadius:"8px",fontSize:"11px",color:"#fca5a5",lineHeight:"1.6"}}>⚠ {m}</div>:null;
+const Info=({ch,c=BL})=><div style={{padding:"10px 12px",background:"#0a0d15",border:`1px solid ${c}30`,borderRadius:"8px",fontSize:"11px",color:c,lineHeight:"1.7"}}>{ch}</div>;
 
-    <!-- Controls pinned to bottom of map -->
-    <div id="ctrl">
-      <div class="crow">
-        <button class="cbtn" id="btnPrev" title="Previous year">⏮</button>
-        <button class="cbtn pl" id="btnPlay" title="Pause">⏸</button>
-        <button class="cbtn" id="btnNext" title="Next year">⏭</button>
-        <select class="spsel" id="spd">
-          <option value="15000" selected>15s</option>
-          <option value="8000">8s</option>
-          <option value="4000">4s</option>
-          <option value="2000">2s</option>
-        </select>
-        <select class="spsel" id="monthSel" title="Switch month if clouds visible">
-          <option value="0">Feb ☀</option>
-          <option value="1">Apr ☀</option>
-          <option value="2">Jun</option>
-          <option value="3">Oct</option>
-          <option value="4">Dec ☀</option>
-        </select>
-        <div class="tl" id="tl">
-          <div class="tl-track"><div class="tl-fill" id="tlFill"></div></div>
-          <div class="tl-thumb" id="tlThumb"></div>
+// ── TEAMS ─────────────────────────────────────────────────────────────────────
+function Teams({teams,set,go}){
+  const [n,sN]=useState("");const [c,sC]=useState(CATS[0]);const [d,sD]=useState("");const [eid,sE]=useState(null);
+  const save=()=>{if(!n.trim())return;if(eid){set(t=>t.map(x=>x.id===eid?{...x,name:n.trim(),cat:c,desc:d}:x));sE(null);}else set(t=>[...t,mk(n.trim(),c,d)]);sN("");sD("");sC(CATS[0]);};
+  const v=teams.filter(t=>t.visited).length,f=teams.filter(t=>t.finalized).length;
+  return <div className="fi" style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+    {teams.length>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px"}}>
+      {[["TOTAL",teams.length,TX],["VISITED",v,A],["DONE",f,GR]].map(([l,x,col])=><Crd key={l} s={{textAlign:"center",padding:"10px"}} ch={<><div style={{fontSize:"24px",fontWeight:"bold",color:col}}>{x}</div><div style={{fontSize:"9px",color:DIM,letterSpacing:"1px"}}>{l}</div></>}/>)}
+    </div>}
+    <Crd s={{borderColor:eid?`${A}50`:BD}} ch={<div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+      <Lbl ch={eid?"EDIT TEAM":"ADD TEAM / PROJECT"}/>
+      <Fi value={n} onChange={e=>sN(e.target.value)} placeholder="Team / Project name" onKeyDown={e=>e.key==="Enter"&&save()}/>
+      <Fsl ch={CATS.map(x=><option key={x}>{x}</option>)} value={c} onChange={e=>sC(e.target.value)}/>
+      <Fta rows={2} value={d} onChange={e=>sD(e.target.value)} placeholder="Brief description (optional)"/>
+      <div style={{display:"flex",gap:"8px"}}>
+        <Btn ch={eid?"✓ UPDATE":"+ ADD TEAM"} onClick={save}/>
+        {eid&&<Btn v="outline" ch="CANCEL" onClick={()=>{sE(null);sN("");sD("");}}/>}
+      </div>
+    </div>}/>
+    {teams.length===0?<div style={{textAlign:"center",color:DIM,padding:"40px 0",fontSize:"13px"}}>Add your first team above →</div>
+    :teams.map((t,i)=><Crd key={t.id} s={{borderLeft:`3px solid ${t.finalized?GR:t.visited?A:BD}`,cursor:"pointer"}} onClick={()=>go(t.id)} ch={
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:"8px"}}>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap",marginBottom:"3px"}}>
+            <span style={{fontWeight:"bold",fontSize:"14px",color:TX}}>{i+1}. {t.name}</span>
+            {t.finalized&&<Pill c={GR} ch={`✓ ${wt(t.finalScores)}/10`}/>}
+            {t.visited&&!t.finalized&&<Pill c={A} ch="VISITED"/>}
+          </div>
+          <div style={{fontSize:"10px",color:DIM}}>{t.cat.split("/")[0].trim()}</div>
+        </div>
+        <div style={{display:"flex",gap:"5px",flexShrink:0}} onClick={e=>e.stopPropagation()}>
+          <Btn s={{padding:"6px 9px",fontSize:"10px"}} ch="JUDGE" onClick={()=>go(t.id)}/>
+          <Btn v="outline" s={{padding:"6px 8px"}} ch="✎" onClick={()=>{sE(t.id);sN(t.name);sC(t.cat);sD(t.desc||"");}}/>
+          <Btn v="danger" s={{padding:"6px 8px"}} ch="✕" onClick={()=>{if(window.confirm("Remove?"))set(ts=>ts.filter(x=>x.id!==t.id));}}/>
         </div>
       </div>
-      <div class="yr-ticks" id="yrTicks"></div>
+    }/>)}
+  </div>;
+}
+
+// ── JUDGE ─────────────────────────────────────────────────────────────────────
+function Judge({team,upd,back,apiKey}){
+  const [sec,sSec]=useState(0);
+  const [al,sAL]=useState(false);const [ae,sAE]=useState("");
+  const [tl,sTL]=useState(null);const [run,sRun]=useState(false);
+  const tmr=useRef(null);
+  useEffect(()=>{if(!team.visited)upd({visited:true});},[]);
+  useEffect(()=>{
+    if(run){tmr.current=setInterval(()=>sTL(p=>{if(p<=1){sRun(false);clearInterval(tmr.current);return 0;}return p-1;}),1000);}
+    return()=>clearInterval(tmr.current);
+  },[run]);
+  const fmt=s=>s===null?"--:--":`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+  const tc=tl!==null?(tl<60?RD:tl<120?A:GR):GR;
+  const bk=gQB(team.cat);
+  const mT=wt(team.manualScores),aiT=team.aiScores?wt(team.aiScores):null,fT=team.finalScores?wt(team.finalScores):null;
+  const uM=(k,v)=>upd({manualScores:{...team.manualScores,[k]:v}});
+  const uF=(k,v)=>upd({finalScores:{...(team.finalScores||eS()),[k]:v}});
+  const getAI=async()=>{
+    if(!_key){sAE("No API key — add in Settings ⚙");return;}
+    sAE("");sAL(true);
+    try{
+      const t=await ai(`You are judging HACKFUSION 2026 projects.\nProject: ${team.name}\nCategory: ${team.cat}\nDesc: ${team.desc||"N/A"}\nNotes: ${(team.stallNotes||"None").slice(0,200)}\nPitch: ${(team.pitchNotes||"None").slice(0,200)}\n\nReply ONLY in this format:\nINNOVATION: 7\nTECHNICAL: 8\nIMPACT: 6\nSCALABILITY: 7\nPRESENTATION: 8\nANALYSIS: Two honest sentences.\nVERDICT: GOOD`);
+      const sc={innovation:pN(t,"INNOVATION"),technical:pN(t,"TECHNICAL"),impact:pN(t,"IMPACT"),scalability:pN(t,"SCALABILITY"),presentation:pN(t,"PRESENTATION")};
+      const vr=["STRONG","GOOD","AVERAGE","WEAK"].find(v=>pS(t,"VERDICT","GOOD").toUpperCase().includes(v))||"GOOD";
+      upd({aiScores:sc,aiAnalysis:pS(t,"ANALYSIS","Assessment complete."),aiVerdict:vr});
+      sSec(2);
+    }catch(e){sAE(e.message==="NO_KEY"?"No API key — add in Settings ⚙":e.message);}
+    sAL(false);
+  };
+  const SECS=[{i:"❓",l:"Q&A"},{i:"✏️",l:"NOTES"},{i:"🎯",l:"SCORE"}];
+  return <div className="fi" style={{display:"flex",flexDirection:"column",gap:"0"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:CARD,borderRadius:"10px",marginBottom:"10px",border:`1px solid ${A}30`}}>
+      <div><div style={{fontSize:"15px",fontWeight:"bold",color:TX}}>{team.name}</div><div style={{fontSize:"10px",color:DIM}}>{team.cat.split("/")[0].trim()}</div></div>
+      <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+        {fT>0&&<div style={{textAlign:"right"}}><div style={{fontSize:"20px",fontWeight:"bold",color:team.finalized?GR:A}}>{fT}</div><div style={{fontSize:"9px",color:DIM}}>/10</div></div>}
+        <Btn v="outline" s={{padding:"6px 10px",fontSize:"10px"}} ch="← BACK" onClick={back}/>
+      </div>
     </div>
-  </div>
-
-</div>
-
-<!-- search results -->
-<div id="sd"></div>
-
-<script>
-// ══════════════════════════════════════════════════════
-//  NASA GIBS — MODIS Terra True Color
-//  Free, no key, CORS-open, real per-year satellite
-//  Using February dates — post-monsoon, clearer globally
-//  If clouds visible: use ↻ DATE button to try other months
-// ══════════════════════════════════════════════════════
-
-const YEARS = [2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023];
-const NY    = YEARS.length;
-
-// Date options per month — user can switch if clouds visible
-const MONTH_DATES = ['02-15','04-15','06-15','10-15','12-15'];
-const MONTH_NAMES = ['Feb','Apr','Jun','Oct','Dec'];
-let monthIdx = 0; // default Feb — dry over most of Asia/Africa
-
-function getDate(yr) {
-  return `${yr}-${MONTH_DATES[monthIdx]}`;
+    <div style={{display:"flex",background:CARD,borderRadius:"8px",marginBottom:"12px",border:`1px solid ${BD}`,overflow:"hidden"}}>
+      {SECS.map((s,i)=><button key={i} onClick={()=>sSec(i)} style={{flex:1,padding:"11px 4px",border:"none",cursor:"pointer",background:sec===i?"#131a2e":"transparent",color:sec===i?A:DIM,fontFamily:"'Courier New',monospace",fontSize:"11px",fontWeight:sec===i?"bold":"normal",borderBottom:sec===i?`2px solid ${A}`:"2px solid transparent",transition:"all .2s"}}><div style={{fontSize:"16px"}}>{s.i}</div>{s.l}</button>)}
+    </div>
+    {sec===0&&<div style={{display:"flex",flexDirection:"column",gap:"10px"}} className="fi">
+      <Crd s={{borderColor:`${tc}30`}} ch={<div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"10px",marginBottom:"8px"}}>
+          <div style={{fontSize:"36px",fontWeight:"bold",color:tc,letterSpacing:"4px",textShadow:run?`0 0 16px ${tc}60`:"none",fontVariantNumeric:"tabular-nums"}}>{fmt(tl)}</div>
+          <div style={{display:"flex",gap:"5px",flexWrap:"wrap",justifyContent:"flex-end"}}>
+            {[5,7,10].map(m=><Btn key={m} v="outline" s={{padding:"5px 8px",fontSize:"10px"}} ch={`${m}m`} onClick={()=>{sTL(m*60);sRun(false);}}/>)}
+            {!run?<Btn s={{padding:"5px 10px",fontSize:"11px"}} ch="▶" onClick={()=>{if(tl===null)sTL(420);sRun(true);}}/>:<Btn v="outline" s={{padding:"5px 10px",fontSize:"11px"}} ch="⏸" onClick={()=>{sRun(false);clearInterval(tmr.current);}}/>}
+            <Btn v="outline" s={{padding:"5px 8px",fontSize:"11px"}} ch="↺" onClick={()=>{sRun(false);clearInterval(tmr.current);sTL(null);}}/>
+          </div>
+        </div>
+        {tl===0&&<div style={{color:RD,fontSize:"11px",letterSpacing:"2px"}}>⏰ TIME UP!</div>}
+      </div>}/>
+      <Info c={BL} ch={<><strong>🔬 Focus: </strong>{bk.p}</>}/>
+      <Crd ch={<><Lbl ch="EXPERT QUESTIONS TO ASK"/>{bk.q.map((q,i)=><div key={i} style={{display:"flex",gap:"10px",marginBottom:"10px"}}><span style={{color:A,fontWeight:"bold",minWidth:"22px",fontSize:"11px",paddingTop:"2px"}}>Q{i+1}</span><span style={{fontSize:"12px",lineHeight:"1.6",color:TX}}>{q}</span></div>)}</>}/>
+      <Crd s={{borderColor:`${RD}25`}} ch={<><Lbl c={RD} ch="🚩 RED FLAGS"/>{bk.r.map((r,i)=><div key={i} style={{display:"flex",gap:"8px",marginBottom:"8px"}}><span style={{color:RD,minWidth:"14px"}}>⚠</span><span style={{fontSize:"12px",color:"#fca5a5",lineHeight:"1.5"}}>{r}</span></div>)}</>}/>
+    </div>}
+    {sec===1&&<div style={{display:"flex",flexDirection:"column",gap:"10px"}} className="fi">
+      <Crd ch={<><Lbl ch="STALL OBSERVATIONS"/><Fta rows={5} value={team.stallNotes} onChange={e=>upd({stallNotes:e.target.value})} placeholder="Demo quality, team confidence, technical depth, audience reaction..."/></>}/>
+      <Crd ch={<><Lbl ch="PITCH SUMMARY (used for AI scoring)"/><Fta rows={4} value={team.pitchNotes} onChange={e=>upd({pitchNotes:e.target.value})} placeholder="Their claims — market, tech, traction, vision, numbers..."/></>}/>
+      <div style={{textAlign:"center"}}><Btn ch="→ GO TO SCORE TAB" onClick={()=>sSec(2)} v="outline"/></div>
+    </div>}
+    {sec===2&&<div style={{display:"flex",flexDirection:"column",gap:"10px"}} className="fi">
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px"}}>
+        <Crd s={{textAlign:"center",padding:"10px"}} ch={<><div style={{fontSize:"9px",color:A,letterSpacing:"1px",marginBottom:"3px"}}>MANUAL</div><div style={{fontSize:"26px",fontWeight:"bold",color:A}}>{mT||"—"}</div></>}/>
+        <Crd s={{textAlign:"center",padding:"10px",borderColor:`${BL}30`}} ch={<><div style={{fontSize:"9px",color:BL,letterSpacing:"1px",marginBottom:"3px"}}>AI SCORE</div><div style={{fontSize:"26px",fontWeight:"bold",color:BL}}>{aiT!==null?aiT:"—"}</div></>}/>
+        <Crd s={{textAlign:"center",padding:"10px",borderColor:team.finalized?`${GR}50`:BD}} ch={<><div style={{fontSize:"9px",color:GR,letterSpacing:"1px",marginBottom:"3px"}}>FINAL</div><div style={{fontSize:"26px",fontWeight:"bold",color:team.finalized?GR:TX}}>{fT||"—"}</div></>}/>
+      </div>
+      <Crd ch={<>
+        <Lbl ch="① YOUR MANUAL SCORES"/>
+        {CR.map(c=><div key={c.key} style={{marginBottom:"10px"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:"3px"}}><span style={{fontSize:"11px",color:c.color}}>{c.icon} {c.label}</span><span style={{fontSize:"9px",color:DIM}}>weight {c.w}%</span></div><Sld val={team.manualScores[c.key]} onChange={v=>uM(c.key,v)} color={c.color} disabled={team.finalized}/></div>)}
+        <Btn v="outline" full ch="USE MANUAL AS FINAL →" onClick={()=>upd({finalScores:{...team.manualScores}})}/>
+      </>}/>
+      <Crd s={{borderColor:`${BL}30`}} ch={<>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px"}}>
+          <Lbl c={BL} ch="② AI SCORE — Compare with yours"/>
+          <Btn s={{padding:"6px 12px",fontSize:"10px",background:BL,color:"#000",border:`1px solid ${BL}`}} ch={team.aiScores?"↺ REFRESH AI":"✨ GET AI SCORE"} onClick={getAI} loading={al} disabled={team.finalized}/>
+        </div>
+        {!apiKey&&<Info c={A} ch={<>🔑 Add Anthropic API key in <strong>Settings ⚙</strong>.</>}/>}
+        <Err m={ae}/>
+        {team.aiScores?<>
+          {team.aiAnalysis&&<div style={{fontSize:"11px",color:"#93c5fd",padding:"8px",background:"#0a1020",borderRadius:"6px",marginBottom:"10px",lineHeight:"1.6"}}>{team.aiAnalysis}</div>}
+          <div style={{background:"#090b12",borderRadius:"8px",padding:"10px",marginBottom:"10px"}}>
+            <div style={{display:"grid",gridTemplateColumns:"auto 1fr 26px 26px",gap:"6px 8px",alignItems:"center"}}>
+              <div/><div/><span style={{fontSize:"8px",color:A,textAlign:"center"}}>YOU</span><span style={{fontSize:"8px",color:BL,textAlign:"center"}}>AI</span>
+              {CR.map(c=>{const m=team.manualScores[c.key]||0,a=team.aiScores[c.key]||0,diff=+(a-m).toFixed(1);return[
+                <span key={c.key+"l"} style={{fontSize:"10px",color:c.color,whiteSpace:"nowrap"}}>{c.icon} {c.label}</span>,
+                <div key={c.key+"b"} style={{height:"6px",background:BD,borderRadius:"3px",position:"relative"}}><div style={{position:"absolute",left:0,width:`${m*10}%`,height:"100%",background:A,borderRadius:"3px",opacity:0.7}}/><div style={{position:"absolute",left:0,width:`${a*10}%`,height:"4px",top:"1px",background:BL,borderRadius:"3px",opacity:0.6}}/></div>,
+                <span key={c.key+"m"} style={{fontSize:"12px",fontWeight:"bold",color:A,textAlign:"center"}}>{m}</span>,
+                <div key={c.key+"a"} style={{textAlign:"center",position:"relative"}}><span style={{fontSize:"12px",fontWeight:"bold",color:BL}}>{a}</span>{diff!==0&&<span style={{position:"absolute",top:"-8px",right:"-2px",fontSize:"8px",color:diff>0?GR:RD,fontWeight:"bold"}}>{diff>0?`+${diff}`:diff}</span>}</div>
+              ];})}
+            </div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"6px"}}>
+            <Btn v="outline" s={{width:"100%",fontSize:"10px",padding:"8px 4px"}} ch="USE AI" onClick={()=>upd({finalScores:{...team.aiScores}})}/>
+            <Btn v="outline" s={{width:"100%",fontSize:"10px",padding:"8px 4px",borderColor:"#a78bfa",color:"#a78bfa"}} ch="AVERAGE" onClick={()=>{const avg={};CR.forEach(c=>{avg[c.key]=parseFloat(((team.manualScores[c.key]+(team.aiScores?.[c.key]||0))/2).toFixed(1));});upd({finalScores:avg});}}/>
+            <Btn v="outline" s={{width:"100%",fontSize:"10px",padding:"8px 4px"}} ch="USE MINE" onClick={()=>upd({finalScores:{...team.manualScores}})}/>
+          </div>
+        </>:<div style={{color:DIM,fontSize:"11px",textAlign:"center",padding:"14px 0"}}>{apiKey?"Tap GET AI SCORE above":"Add API key in Settings ⚙"}</div>}
+      </>}/>
+      <Crd s={{borderColor:`${GR}40`}} ch={<>
+        <Lbl c={GR} ch="③ FINAL SCORE — Adjust then Lock"/>
+        {team.aiScores&&<div style={{fontSize:"10px",color:DIM,marginBottom:"10px"}}>Ref: <span style={{color:A}}>amber=manual</span> · <span style={{color:BL}}>blue=AI</span></div>}
+        {CR.map(c=><div key={c.key} style={{marginBottom:"10px"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:"3px"}}><span style={{fontSize:"11px",color:c.color}}>{c.icon} {c.label}</span>{team.aiScores&&<span style={{fontSize:"9px",color:DIM}}><span style={{color:A}}>{team.manualScores[c.key]}</span> · <span style={{color:BL}}>{team.aiScores[c.key]}</span></span>}</div><Sld val={(team.finalScores||eS())[c.key]} onChange={v=>uF(c.key,v)} color={GR} disabled={team.finalized}/></div>)}
+        {!team.finalized
+          ?<Btn v="green" full ch={`🔒 LOCK FINAL — ${fT||wt(team.finalScores||eS())}/10`} s={{marginTop:"8px"}} onClick={()=>upd({finalized:true})}/>
+          :<div style={{textAlign:"center",padding:"14px",background:"#0a1a0f",borderRadius:"8px",border:`1px solid ${GR}40`,marginTop:"8px"}}>
+            <div style={{fontSize:"32px",fontWeight:"bold",color:GR,marginBottom:"4px"}}>{fT}/10</div>
+            <div style={{fontSize:"11px",color:"#86efac",marginBottom:"10px"}}>✓ Score Finalized</div>
+            <Btn v="outline" s={{borderColor:A,color:A}} ch="UNLOCK TO EDIT" onClick={()=>upd({finalized:false})}/>
+          </div>}
+      </>}/>
+    </div>}
+  </div>;
 }
 
-function gibsUrl(yi, satellite) {
-  const date  = getDate(YEARS[yi]);
-  // Use BOTH Terra and Aqua — different orbits fill each other's gaps
-  const layer = satellite === 'aqua'
-    ? 'MODIS_Aqua_CorrectedReflectance_TrueColor'
-    : 'MODIS_Terra_CorrectedReflectance_TrueColor';
-  return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/${date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`;
+// ── RESULTS ───────────────────────────────────────────────────────────────────
+function Results({teams,set,apiKey,go}){
+  const [ld,sLd]=useState(false);const [er,sEr]=useState("");const [op,sOp]=useState(null);
+  const ranked=[...teams].filter(t=>t.finalScores&&wt(t.finalScores)>0).sort((a,b)=>wt(b.finalScores)-wt(a.finalScores));
+  const pend=teams.filter(t=>!t.finalScores||wt(t.finalScores)===0);
+  const MD=["🥇","🥈","🥉"];const VC={STRONG:GR,GOOD:A,AVERAGE:"#fb923c",WEAK:RD};
+  const runOne=async(team)=>{
+    const t=await ai(`HACKFUSION 2026 judge. Rate 0-10.\nProject: ${team.name}, Category: ${team.cat}\nNotes: ${(team.stallNotes||team.pitchNotes||"None").slice(0,250)}\n\nReply ONLY:\nINNOVATION: 7\nTECHNICAL: 8\nIMPACT: 6\nSCALABILITY: 7\nPRESENTATION: 8\nANALYSIS: Two sentences.\nVERDICT: GOOD`);
+    set(ts=>ts.map(x=>x.id===team.id?{...x,aiScores:{innovation:pN(t,"INNOVATION"),technical:pN(t,"TECHNICAL"),impact:pN(t,"IMPACT"),scalability:pN(t,"SCALABILITY"),presentation:pN(t,"PRESENTATION")},aiAnalysis:pS(t,"ANALYSIS","Assessment complete."),aiVerdict:["STRONG","GOOD","AVERAGE","WEAK"].find(v=>pS(t,"VERDICT","GOOD").toUpperCase().includes(v))||"GOOD"}:x));
+  };
+  const runAll=async()=>{
+    if(!apiKey){sEr("Add API key in Settings ⚙");return;}
+    sEr("");sLd(true);
+    const ts=teams.filter(t=>t.visited&&!t.aiScores);
+    if(!ts.length){sEr("No unscored visited teams.");sLd(false);return;}
+    for(const t of ts){try{await runOne(t);}catch(e){sEr("Error on "+t.name+": "+e.message);break;}}
+    sLd(false);
+  };
+  return <div className="fi" style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px"}}>
+      {[["TOTAL",teams.length,TX],["SCORED",ranked.length,A],["FINAL",teams.filter(t=>t.finalized).length,GR]].map(([l,n,c])=><Crd key={l} s={{textAlign:"center",padding:"10px"}} ch={<><div style={{fontSize:"24px",fontWeight:"bold",color:c}}>{n}</div><div style={{fontSize:"9px",color:DIM,letterSpacing:"1px"}}>{l}</div></>}/>)}
+    </div>
+    <Btn full loading={ld} disabled={!apiKey} ch="✨ GET AI SCORES FOR ALL VISITED TEAMS" onClick={runAll} s={{opacity:!apiKey?0.5:1}}/>
+    {!apiKey&&<Info c={A} ch={<>🔑 Add Anthropic API key in <strong>Settings ⚙</strong> to enable AI scoring.</>}/>}
+    <Err m={er}/>
+    {teams.length>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
+      <Btn v="outline" s={{width:"100%",borderColor:GR,color:GR,padding:"12px 8px"}} ch={<span style={{display:"block",textAlign:"center"}}>📄 PDF REPORT<br/><span style={{fontSize:"9px",opacity:0.7}}>Print / Save</span></span>} onClick={()=>xPDF(teams)}/>
+      <Btn v="outline" s={{width:"100%",borderColor:BL,color:BL,padding:"12px 8px"}} ch={<span style={{display:"block",textAlign:"center"}}>📊 CSV / EXCEL<br/><span style={{fontSize:"9px",opacity:0.7}}>Download file</span></span>} onClick={()=>xCSV(teams)}/>
+    </div>}
+    {ranked.length>0&&<Crd ch={<><Lbl ch="🏆 LEADERBOARD"/>
+      {ranked.map((t,i)=>{const tot=wt(t.finalScores),io=op===t.id;return<div key={t.id} style={{marginBottom:"6px"}}>
+        <div onClick={()=>sOp(io?null:t.id)} style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px",background:io?"#131a2e":"#090b12",borderRadius:io?"8px 8px 0 0":"8px",cursor:"pointer",border:`1px solid ${io?A+"40":BD}`}}>
+          <span style={{fontSize:"20px",minWidth:"26px"}}>{MD[i]||`#${i+1}`}</span>
+          <div style={{flex:1,minWidth:0}}><div style={{fontWeight:"bold",fontSize:"13px",color:TX}}>{t.name}</div><div style={{fontSize:"10px",color:DIM}}>{t.cat.split("/")[0].trim()}</div></div>
+          <div style={{textAlign:"right"}}><div style={{fontSize:"22px",fontWeight:"bold",color:i===0?A:TX}}>{tot}</div><div style={{fontSize:"9px",color:DIM}}>/10</div></div>
+        </div>
+        {io&&<div style={{padding:"12px",background:"#0a0d15",borderRadius:"0 0 8px 8px",border:`1px solid ${BD}`,borderTop:"none"}}>
+          {CR.map(c=><div key={c.key} style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"7px"}}>
+            <span style={{fontSize:"10px",color:c.color,width:"86px"}}>{c.icon} {c.label}</span>
+            <div style={{flex:1,height:"6px",background:BD,borderRadius:"3px",position:"relative"}}><div style={{position:"absolute",left:0,width:`${(t.finalScores[c.key]||0)*10}%`,height:"100%",background:c.color,borderRadius:"3px"}}/></div>
+            <span style={{fontSize:"12px",color:c.color,fontWeight:"bold",width:"22px",textAlign:"right"}}>{t.finalScores[c.key]}</span>
+            {t.aiScores&&<span style={{fontSize:"9px",color:BL,width:"32px"}}>AI:{t.aiScores[c.key]}</span>}
+          </div>)}
+          {t.aiAnalysis&&<div style={{fontSize:"11px",color:"#93c5fd",padding:"8px",background:"#0a1020",borderRadius:"6px",marginBottom:"8px",lineHeight:"1.6"}}>{t.aiAnalysis}</div>}
+          {t.aiVerdict&&<Pill c={VC[t.aiVerdict]||A} ch={t.aiVerdict}/>}
+          <div style={{marginTop:"10px"}}><Btn s={{padding:"6px 12px",fontSize:"10px"}} ch="EDIT SCORES" onClick={()=>go(t.id)}/></div>
+        </div>}
+      </div>;})}
+    </>}/>}
+    {pend.length>0&&<Crd ch={<><Lbl c={DIM} ch={`PENDING (${pend.length})`}/>{pend.map(t=><div key={t.id} onClick={()=>go(t.id)} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px",background:"#090b12",borderRadius:"6px",marginBottom:"6px",cursor:"pointer"}}><span style={{color:DIM}}>○</span><span style={{flex:1,fontSize:"13px",color:DIM}}>{t.name}</span><Pill c={DIM} ch={t.visited?"VISITED":"NOT VISITED"}/></div>)}</>}/>}
+    {ranked.length===0&&pend.length===0&&<div style={{textAlign:"center",color:DIM,padding:"40px 0"}}>Add teams and judge them to see results →</div>}
+  </div>;
 }
 
-const LABELS = 'https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png';
-
-// ── STATE ──────────────────────────────────────────
-let center  = [17.4435, 78.3772];
-let zoom    = 7;
-let yIdx    = 0;
-let playing = true;
-let timer   = null;
-let tickSub = null;
-
-// ── MAP ────────────────────────────────────────────
-const map = L.map('leafmap', {
-  zoomControl: false,
-  attributionControl: false,
-  maxZoom: 9,
-  minZoom: 2
-});
-map.setView(center, zoom);
-L.control.zoom({position:'bottomright'}).addTo(map);
-
-// Dark base
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
-  {subdomains:'abcd', maxZoom:9, zIndex:1}).addTo(map);
-
-// Satellite layers (swappable) — Terra + Aqua stacked to fill swath gaps
-let satTerra = null;
-let satAqua  = null;
-
-function setSatLayer(yi) {
-  if (satTerra) { try { map.removeLayer(satTerra); } catch(e){} }
-  if (satAqua)  { try { map.removeLayer(satAqua);  } catch(e){} }
-  const errTile = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-  // Aqua first (zIndex 2) — Terra on top (zIndex 3) where available
-  satAqua  = L.tileLayer(gibsUrl(yi,'aqua'),  {maxZoom:9,zIndex:2,errorTileUrl:errTile}).addTo(map);
-  satTerra = L.tileLayer(gibsUrl(yi,'terra'), {maxZoom:9,zIndex:3,errorTileUrl:errTile,opacity:0.99}).addTo(map);
+// ── SETTINGS ──────────────────────────────────────────────────────────────────
+function Settings({apiKey,onSave,teams,set}){
+  const [k,sK]=useState(apiKey||"");const [show,sShow]=useState(false);const [saved,sSaved]=useState(false);
+  const [inst,sInst]=useState(false);const dp=useRef(null);
+  useEffect(()=>{const h=e=>{e.preventDefault();dp.current=e;sInst(true);};window.addEventListener("beforeinstallprompt",h);return()=>window.removeEventListener("beforeinstallprompt",h);},[]);
+  const install=async()=>{if(dp.current){dp.current.prompt();await dp.current.userChoice;dp.current=null;sInst(false);}};
+  const save=()=>{onSave(k.trim());sSaved(true);setTimeout(()=>sSaved(false),1500);};
+  return <div className="fi" style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+    <Info c={BL} ch={<><strong style={{color:TX}}>Q&A, Timer, Notes, Manual Scoring</strong> — offline, no key needed.<br/><strong style={{color:TX}}>AI Scores, Pitch Decoder, Comparator</strong> — need Anthropic API key.<br/>💰 New accounts get <strong>$5 free</strong> — enough for full expo.<br/>🔗 <strong>console.anthropic.com</strong> → API Keys</>}/>
+    <Crd ch={<>
+      <Lbl ch="ANTHROPIC API KEY"/>
+      <div style={{position:"relative",marginBottom:"10px"}}>
+        <Fi type={show?"text":"password"} value={k} onChange={e=>sK(e.target.value)} placeholder="sk-ant-api03-..." s={{paddingRight:"44px"}}/>
+        <button onClick={()=>sShow(s=>!s)} style={{position:"absolute",right:"10px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:DIM,cursor:"pointer",fontSize:"14px"}}>{show?"🙈":"👁️"}</button>
+      </div>
+      <div style={{fontSize:"9px",color:DIM,marginBottom:"10px"}}>Saved in localStorage — persists between sessions. Never shared.</div>
+      <div style={{display:"flex",gap:"8px"}}>
+        <Btn s={{flex:1}} ch={saved?"✓ SAVED!":"SAVE KEY"} onClick={save}/>
+        {k&&<Btn v="danger" ch="CLEAR" onClick={()=>{sK("");onSave("");}}/>}
+      </div>
+      {apiKey&&<div style={{marginTop:"10px",padding:"8px",background:"#0a1a0f",borderRadius:"6px",border:`1px solid ${GR}30`,fontSize:"11px",color:GR}}>✓ API key active — AI features enabled</div>}
+    </>}/>
+    <Crd ch={<>
+      <Lbl ch="📱 INSTALL AS PWA APP"/>
+      <div style={{fontSize:"11px",color:DIM,lineHeight:"1.9",marginBottom:"12px"}}>
+        <strong style={{color:TX}}>iPhone Safari:</strong> Tap <strong style={{color:A}}>Share ↑</strong> → "Add to Home Screen" → Add<br/>
+        <strong style={{color:TX}}>Android Chrome:</strong> Tap <strong style={{color:A}}>⋮</strong> → "Add to Home screen" → Install<br/>
+        <span style={{color:"#475569",fontSize:"10px"}}>⚖️ JudgePro icon · Full screen · Works offline · Data persists</span>
+      </div>
+      {inst?<Btn full ch="⬇ INSTALL APP NOW" onClick={install}/>:<div style={{padding:"10px",background:"#090b12",borderRadius:"6px",fontSize:"11px",color:DIM,textAlign:"center"}}>Use Share/Menu method above on your phone</div>}
+    </>}/>
+    <Crd ch={<>
+      <Lbl ch="EXPORT DATA"/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"8px"}}>
+        <Btn v="outline" s={{width:"100%",borderColor:GR,color:GR}} ch="📄 PDF REPORT" onClick={()=>xPDF(teams)}/>
+        <Btn v="outline" s={{width:"100%",borderColor:BL,color:BL}} ch="📊 CSV EXPORT" onClick={()=>xCSV(teams)}/>
+      </div>
+      <div style={{fontSize:"9px",color:DIM}}>PDF: Full scorecard · CSV: All data for Excel / Google Sheets</div>
+    </>}/>
+    <Crd ch={<>
+      <Lbl ch="DATA"/>
+      <div style={{fontSize:"11px",color:DIM,marginBottom:"10px"}}>All data saved in localStorage — survives browser close, restart, and phone reboot. Only cleared here.</div>
+      <Btn v="danger" full ch="🗑 CLEAR ALL TEAMS & SCORES" onClick={()=>{if(window.confirm("Delete ALL data? Cannot be undone."))set([]);}}/>
+    </>}/>
+    <Crd s={{background:"#0a0d15"}} ch={<><Lbl ch="ABOUT"/><div style={{fontSize:"11px",color:DIM,lineHeight:"1.8"}}><strong style={{color:TX}}>HackFusion Judge Pro v3.0</strong><br/>All-in-One Expert Judging Tool<br/>HACKFUSION 2026 — National Project Expo<br/><span style={{color:A}}>Built with Claude AI · Anthropic</span></div></>}/>
+  </div>;
 }
 
-// Labels on top
-L.tileLayer(LABELS, {subdomains:'abcd', maxZoom:9, zIndex:10}).addTo(map);
+// ── ROOT ──────────────────────────────────────────────────────────────────────
+function App(){
+  const [screen,sSc]=useState("teams");
+  const [teams,setTeamsRaw]=useState(()=>LS.g("hfj_teams",[]));
+  const [aid,sAid]=useState(null);
+  const [apiKey,sApiKey]=useState(()=>LS.g("hfj_apikey",""));
 
-// First load
-setSatLayer(0);
+  useEffect(()=>{const k=LS.g("hfj_apikey","");if(k){sApiKey(k);sKey(k);}},[]);
 
-// ── YEAR TICKS ─────────────────────────────────────
-const ticksEl = document.getElementById('yrTicks');
-YEARS.forEach((y, i) => {
-  const t = document.createElement('span');
-  t.className = 'yr-tick' + (i===0?' on':'');
-  t.textContent = y;
-  t.onclick = () => jumpTo(i);
-  ticksEl.appendChild(t);
-});
+  const setTeams=useCallback(fn=>{
+    setTeamsRaw(prev=>{const next=typeof fn==="function"?fn(prev):fn;LS.s("hfj_teams",next);return next;});
+  },[]);
 
-function updTicks(i) {
-  ticksEl.querySelectorAll('.yr-tick').forEach((t,j) => t.classList.toggle('on', j===i));
+  const hKey=k=>{sApiKey(k);sKey(k);LS.s("hfj_apikey",k);};
+  const upd=useCallback((id,patch)=>setTeams(ts=>ts.map(t=>t.id===id?{...t,...patch}:t)),[setTeams]);
+  const at=aid?teams.find(t=>t.id===aid):null;
+  const go=id=>{sAid(id);sSc("judge");};
+  const v=teams.filter(t=>t.visited).length,f=teams.filter(t=>t.finalized).length;
+  const NAV=[{id:"teams",i:"👥",l:"TEAMS"},{id:"judge",i:"⚖️",l:"JUDGE"},{id:"results",i:"🏆",l:"RESULTS"},{id:"settings",i:"⚙️",l:"SETTINGS"}];
+
+  return <div style={{fontFamily:"'Courier New',monospace",background:BG,minHeight:"100vh",color:TX,maxWidth:"600px",margin:"0 auto"}}>
+    <div style={{background:"linear-gradient(135deg,#0d1117,#0a0f1e)",borderBottom:`1px solid ${A}25`,padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:50,paddingTop:"max(12px,env(safe-area-inset-top))"}}>
+      <div>
+        <div style={{fontSize:"9px",color:A,letterSpacing:"3px"}}>◈ HACKFUSION 2026</div>
+        <div style={{fontSize:"17px",fontWeight:"bold",color:"#fff"}}>{screen==="judge"&&at?at.name:"Judge Pro ⚖️"}</div>
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+        {teams.length>0&&<div style={{fontSize:"9px",textAlign:"right"}}><div style={{color:A}}>{v}/{teams.length} visited</div><div style={{color:GR}}>{f} final</div></div>}
+        <div style={{width:"8px",height:"8px",borderRadius:"50%",background:apiKey?GR:A,boxShadow:`0 0 6px ${apiKey?GR:A}`}}/>
+      </div>
+    </div>
+    <div style={{display:"flex",background:CARD,borderBottom:`1px solid ${BD}`,position:"sticky",top:"58px",zIndex:49}}>
+      {NAV.map(n=><button key={n.id} onClick={()=>{sSc(n.id);if(n.id!=="judge")sAid(null);}} style={{flex:1,padding:"10px 2px",border:"none",cursor:"pointer",background:screen===n.id?"#131a2e":"transparent",color:screen===n.id?A:DIM,fontFamily:"'Courier New',monospace",fontSize:"9px",fontWeight:screen===n.id?"bold":"normal",borderBottom:screen===n.id?`2px solid ${A}`:"2px solid transparent",transition:"all .2s"}}><div style={{fontSize:"15px"}}>{n.i}</div>{n.l}</button>)}
+    </div>
+    <div style={{padding:"14px 14px 100px"}}>
+      {screen==="teams"&&<Teams teams={teams} set={setTeams} go={go}/>}
+      {screen==="judge"&&(at
+        ?<Judge team={at} upd={p=>upd(aid,p)} back={()=>{sSc("teams");sAid(null);}} apiKey={apiKey}/>
+        :<div className="fi" style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+          <Info ch={<>Select a team from <strong style={{color:A}}>TEAMS</strong> and tap JUDGE.</>}/>
+          {teams.map(t=><Crd key={t.id} onClick={()=>go(t.id)} s={{cursor:"pointer",borderLeft:`3px solid ${t.finalized?GR:t.visited?A:BD}`}} ch={<div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontWeight:"bold",color:TX}}>{t.name}</div><div style={{fontSize:"10px",color:DIM,marginTop:"2px"}}>{t.cat.split("/")[0].trim()}</div></div><div style={{display:"flex",alignItems:"center",gap:"8px"}}>{t.finalized&&<Pill c={GR} ch={`✓ ${wt(t.finalScores)}`}/>}{t.visited&&!t.finalized&&<Pill c={A} ch="VISITED"/>}<span style={{color:DIM,fontSize:"16px"}}>→</span></div></div>}/>)}
+          {teams.length===0&&<div style={{textAlign:"center",color:DIM,padding:"40px 0"}}>Add teams in TEAMS tab first →</div>}
+        </div>
+      )}
+      {screen==="results"&&<Results teams={teams} set={setTeams} apiKey={apiKey} go={go}/>}
+      {screen==="settings"&&<Settings apiKey={apiKey} onSave={hKey} teams={teams} set={setTeams}/>}
+    </div>
+  </div>;
 }
-
-function updThumb(i) {
-  const pct = (i / (NY-1)) * 100;
-  document.getElementById('tlFill').style.width  = pct + '%';
-  document.getElementById('tlThumb').style.left  = pct + '%';
-}
-
-// ── YEAR DISPLAY ───────────────────────────────────
-const yearNumEl = document.getElementById('yearNum');
-const yearBarEl = document.getElementById('yearBar');
-
-function showYear(i) {
-  yIdx = i;
-  const y = YEARS[i];
-
-  // Fade year number out, swap, fade in
-  yearNumEl.classList.add('fade');
-  setTimeout(() => {
-    yearNumEl.textContent = y;
-    yearNumEl.classList.remove('fade');
-  }, 200);
-
-  setSatLayer(i);
-  updTicks(i);
-  updThumb(i);
-}
-
-// ── PLAYBACK ───────────────────────────────────────
-function startBar(ms) {
-  yearBarEl.style.transition = 'none';
-  yearBarEl.style.width = '0%';
-  requestAnimationFrame(() => {
-    yearBarEl.style.transition = `width ${ms}ms linear`;
-    yearBarEl.style.width = '100%';
-  });
-}
-
-function scheduleNext() {
-  clearTimeout(timer);
-  if (!playing) return;
-  const ms = +document.getElementById('spd').value;
-  startBar(ms);
-  timer = setTimeout(() => {
-    const next = (yIdx + 1) % NY;
-    showYear(next);
-    scheduleNext();
-  }, ms);
-}
-
-function play() {
-  playing = true;
-  document.getElementById('btnPlay').textContent = '⏸';
-  document.getElementById('btnPlay').classList.add('pl');
-  scheduleNext();
-}
-
-function pause() {
-  playing = false;
-  clearTimeout(timer);
-  yearBarEl.style.transition = 'none';
-  yearBarEl.style.width = '0%';
-  document.getElementById('btnPlay').textContent = '▶';
-  document.getElementById('btnPlay').classList.remove('pl');
-}
-
-function jumpTo(i) {
-  pause();
-  showYear(i);
-}
-
-document.getElementById('btnPlay').onclick = () => playing ? pause() : play();
-document.getElementById('btnPrev').onclick = () => { pause(); showYear((yIdx - 1 + NY) % NY); };
-document.getElementById('btnNext').onclick = () => { pause(); showYear((yIdx + 1) % NY); };
-document.getElementById('spd').onchange    = () => { if (playing) scheduleNext(); };
-document.getElementById('monthSel').onchange = e => {
-  monthIdx = +e.target.value;
-  setSatLayer(yIdx); // reload current year with new month
-};
-
-// Click on timeline bar to jump
-document.getElementById('tl').onclick = e => {
-  const r   = e.currentTarget.getBoundingClientRect();
-  const pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-  const i   = Math.round(pct * (NY - 1));
-  jumpTo(i);
-};
-
-// Auto-start playing
-play();
-
-// ── SEARCH ─────────────────────────────────────────
-const siEl = document.getElementById('si');
-const sbEl = document.getElementById('sb');
-const sdEl = document.getElementById('sd');
-let sres=[], hiI=-1, sdt=null;
-
-function sdPos() {
-  const r  = siEl.getBoundingClientRect();
-  const r2 = sbEl.getBoundingClientRect();
-  sdEl.style.top   = (r.bottom + window.scrollY) + 'px';
-  sdEl.style.left  = r.left + 'px';
-  sdEl.style.width = (r2.right - r.left) + 'px';
-  sdEl.style.maxWidth = '96vw';
-}
-
-function bname(p) {
-  return [p.name, p.city !== p.name && p.city, p.state, p.country].filter(Boolean).join(', ');
-}
-
-function renderSD(items) {
-  sres = items; hiI = -1; sdEl.innerHTML = '';
-  if (!items.length) {
-    sdEl.innerHTML = '<div class="si" style="color:var(--dim);pointer-events:none">No results found</div>';
-    return;
-  }
-  items.forEach((it, i) => {
-    const p    = it.properties;
-    const name = bname(p);
-    const type = (p.osm_value || p.type || '').replace(/_/g,' ');
-    const d    = document.createElement('div');
-    d.className = 'si';
-    d.innerHTML = `<span style="color:var(--text)">${name}</span>`
-      + (type ? `<span style="color:var(--dim);font-size:9px;margin-left:8px;text-transform:uppercase">${type}</span>` : '');
-    // Both click (desktop) and touchend (mobile) — most reliable cross-platform
-    d.addEventListener('touchend', e => { e.preventDefault(); pick(i); });
-    d.addEventListener('click',    () => pick(i));
-    sdEl.appendChild(d);
-  });
-}
-
-function pick(i) {
-  const f = sres[i]; if (!f) return;
-  const [lng, lat] = f.geometry.coordinates;
-  sdEl.classList.remove('on');  // close dropdown FIRST
-  siEl.blur();                  // dismiss keyboard on mobile
-  setTimeout(() => {
-    map.setView([lat, lng], 7, {animate: true});
-    center = [lat, lng]; zoom = 7;
-    siEl.value = bname(f.properties).split(',')[0];
-    showYear(yIdx);
-    if (!playing) play();
-  }, 100);
-}
-
-async function doSearch(q) {
-  if (q.length < 2) { sdEl.classList.remove('on'); return; }
-  sdPos();
-  sdEl.innerHTML = '<div class="si" style="color:var(--dim);pointer-events:none">Searching…</div>';
-  sdEl.classList.add('on');
-  try {
-    const r = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=7&lang=en`);
-    const d = await r.json();
-    renderSD(d.features || []);
-  } catch {
-    sdEl.innerHTML = '<div class="si" style="color:var(--red);pointer-events:none">Search unavailable</div>';
-  }
-}
-
-// LOCATE button — search and auto-navigate to first result
-sbEl.onclick = async () => {
-  const q = siEl.value.trim();
-  if (!q) return;
-  sbEl.textContent = '…';
-  sbEl.disabled = true;
-  try {
-    const r = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=5&lang=en`);
-    const d = await r.json();
-    const items = d.features || [];
-    if (items.length > 0) {
-      // Show dropdown so user can pick, but also auto-pick first after 1s
-      renderSD(items);
-      sdPos();
-      sdEl.classList.add('on');
-      // Auto-pick first result if user doesn't interact within 1.5s
-      setTimeout(() => {
-        if (sdEl.classList.contains('on') && sres.length > 0) pick(0);
-      }, 1500);
-    } else {
-      sdEl.innerHTML = '<div class="si" style="color:var(--dim);pointer-events:none">No results found</div>';
-      sdEl.classList.add('on');
-    }
-  } catch {
-    sdEl.innerHTML = '<div class="si" style="color:var(--red);pointer-events:none">Search unavailable</div>';
-    sdEl.classList.add('on');
-  }
-  sbEl.textContent = 'LOCATE';
-  sbEl.disabled = false;
-};
-
-siEl.addEventListener('input', () => { clearTimeout(sdt); sdt = setTimeout(() => doSearch(siEl.value.trim()), 300); });
-siEl.addEventListener('focus', sdPos);
-siEl.addEventListener('keydown', e => {
-  const its = sdEl.querySelectorAll('.si');
-  if      (e.key === 'ArrowDown') { e.preventDefault(); hiI = Math.min(hiI+1, its.length-1); its.forEach((x,i) => x.classList.toggle('hi', i===hiI)); }
-  else if (e.key === 'ArrowUp')   { e.preventDefault(); hiI = Math.max(hiI-1, -1); its.forEach((x,i) => x.classList.toggle('hi', i===hiI)); }
-  else if (e.key === 'Enter')     { hiI >= 0 ? pick(hiI) : sbEl.onclick(); }
-  else if (e.key === 'Escape')    { sdEl.classList.remove('on'); }
-});
-document.addEventListener('click', e => {
-  if (!e.target.closest('#si') && !e.target.closest('#sb') && !e.target.closest('#sd'))
-    sdEl.classList.remove('on');
-});
+ReactDOM.createRoot(document.getElementById("app")).render(<App/>);
 </script>
 </body>
 </html>
