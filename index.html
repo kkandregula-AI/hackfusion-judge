@@ -56,7 +56,7 @@ const pN=(t,k,d=6)=>{const m=t.match(new RegExp(k+"\\s*[:\\-]\\s*(\\d+(?:\\.\\d+
 const pS=(t,k,d="")=>{const m=t.match(new RegExp(k+"\\s*[:\\-]\\s*(.+)","i"));return m?m[1].trim():d;};
 async function ai(prompt){
   if(!_key)throw new Error("NO_KEY");
-  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":_key,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,messages:[{role:"user",content:prompt}]})});
+  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":_key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,messages:[{role:"user",content:prompt}]})});
   const txt=await res.text();
   let d;try{d=JSON.parse(txt);}catch{throw new Error("Bad response: "+txt.slice(0,60));}
   if(d.error)throw new Error(d.error.message||"API error");
