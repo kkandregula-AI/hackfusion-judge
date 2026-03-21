@@ -610,7 +610,7 @@ function Judge({team,upd,back,apiKey}) {
             <Sld val={team.manualScores[c.key]} onChange={v=>uM(c.key,v)} color={c.color} disabled={team.finalized}/>
           </div>
         )}
-        <Btn v="outline" full ch="USE MANUAL AS FINAL →" onClick={()=>upd({finalScores:{...team.manualScores}})}/>
+        <Btn v="outline" full disabled={team.finalized} ch="USE MANUAL AS FINAL →" s={{opacity:team.finalized?0.35:1}} onClick={()=>upd({finalScores:{...team.manualScores}})}/>
         </>
       }/>
 
