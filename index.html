@@ -650,16 +650,19 @@ function Judge({team,upd,back,apiKey}) {
               })}
             </div>
           </div>
+          {team.finalized && <div style={{padding:"8px 10px",background:"#1a1200",border:`1px solid ${A}40`,borderRadius:"6px",fontSize:"10px",color:A,textAlign:"center",marginBottom:"6px"}}>
+            🔒 Locked — tap <strong>UNLOCK TO EDIT</strong> in ③ below before changing scores
+          </div>}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"6px"}}>
-            <Btn v="outline" s={{width:"100%",fontSize:"10px",padding:"8px 4px"}} ch="USE AI"
+            <Btn v="outline" disabled={team.finalized} s={{width:"100%",fontSize:"10px",padding:"8px 4px",opacity:team.finalized?0.35:1}} ch="USE AI"
               onClick={()=>upd({finalScores:{...team.aiScores}})}/>
-            <Btn v="outline" s={{width:"100%",fontSize:"10px",padding:"8px 4px",borderColor:"#a78bfa",color:"#a78bfa"}} ch="AVERAGE"
+            <Btn v="outline" disabled={team.finalized} s={{width:"100%",fontSize:"10px",padding:"8px 4px",borderColor:"#a78bfa",color:"#a78bfa",opacity:team.finalized?0.35:1}} ch="AVERAGE"
               onClick={()=>{
                 const avg={};
                 CR.forEach(c=>{avg[c.key]=parseFloat(((team.manualScores[c.key]+(team.aiScores?.[c.key]||0))/2).toFixed(1));});
                 upd({finalScores:avg});
               }}/>
-            <Btn v="outline" s={{width:"100%",fontSize:"10px",padding:"8px 4px"}} ch="USE MINE"
+            <Btn v="outline" disabled={team.finalized} s={{width:"100%",fontSize:"10px",padding:"8px 4px",opacity:team.finalized?0.35:1}} ch="USE MINE"
               onClick={()=>upd({finalScores:{...team.manualScores}})}/>
           </div>
         </> : <div style={{color:DIM,fontSize:"11px",textAlign:"center",padding:"14px 0"}}>
