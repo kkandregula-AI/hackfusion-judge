@@ -228,7 +228,7 @@ async function callAI(prompt) {
 }
 
 // ── PDF Export ────────────────────────────────────────────────────────────────
-function xPDF(teams) {
+function xPDF(teams, expo={}) {
   const ranked = [...teams].filter(t=>t.finalScores&&wt(t.finalScores)>0)
     .sort((a,b)=>wt(b.finalScores)-wt(a.finalScores));
   const now = new Date().toLocaleString("en-IN");
@@ -289,8 +289,10 @@ function xPDF(teams) {
     <button class="pb np" onclick="window.print()">🖨 Print / Save PDF</button>
     <div style="max-width:780px;margin:0 auto;padding:20px">
       <div style="text-align:center;margin-bottom:24px;padding:20px;background:linear-gradient(135deg,#07090e,#0a0f1e);border-radius:10px;color:#fff">
-        <div style="font-size:9px;letter-spacing:4px;color:#f59e0b;margin-bottom:4px">HACKFUSION 2026 · NATIONAL LEVEL PROJECT EXPO</div>
-        <div style="font-size:24px;font-weight:bold">⚖️ HackFusion Judge Pro — Results</div>
+        ${expo.logo?`<img src="${expo.logo}" style="height:60px;margin-bottom:10px;object-fit:contain" onerror="this.style.display='none'"/>`:""}
+        <div style="font-size:9px;letter-spacing:4px;color:#f59e0b;margin-bottom:4px">${expo.expoName||"HACKFUSION 2026"} · NATIONAL LEVEL PROJECT EXPO</div>
+        <div style="font-size:24px;font-weight:bold">⚖️ Judge Pro — Results Report</div>
+        ${expo.judgeName?`<div style="font-size:12px;color:#94a3b8;margin-top:4px">Judge: <strong style="color:#f59e0b">${expo.judgeName}</strong></div>`:""}
         <div style="font-size:10px;color:#64748b;margin-top:6px">${now} · ${teams.length} teams · ${ranked.length} scored · ${teams.filter(t=>t.finalized).length} finalized</div>
       </div>
       <h2 style="font-size:15px;border-bottom:3px solid #f59e0b;padding-bottom:5px;margin-bottom:14px">📊 Summary</h2>
@@ -307,7 +309,7 @@ function xPDF(teams) {
       </table>
       <h2 style="font-size:15px;border-bottom:3px solid #f59e0b;padding-bottom:5px;margin-bottom:14px">📋 Scorecards</h2>
       ${cards||"<p style='color:#94a3b8'>No scored teams yet.</p>"}
-      <div style="text-align:center;margin-top:24px;font-size:10px;color:#94a3b8">HackFusion Judge Pro · Built with Claude AI · Anthropic</div>
+      <div style="text-align:center;margin-top:24px;font-size:10px;color:#94a3b8">${expo.judgeName?`Judged by ${expo.judgeName}${expo.judgeOrg?" · "+expo.judgeOrg:""} · `:""}HackFusion Judge Pro · Built with Claude AI · Anthropic</div>
     </div></body></html>`;
 
   const w = window.open("","_blank");
@@ -316,7 +318,7 @@ function xPDF(teams) {
 }
 
 // ── CSV Export ────────────────────────────────────────────────────────────────
-function xCSV(teams) {
+function xCSV(teams, expo={}) {
   const ck = ["innovation","technical","impact","scalability","presentation"];
   const cl = ["Innovation","Technical","Impact","Scalability","Presentation"];
   const esc = v => { const s=String(v==null?"":v); return (s.includes(",")||s.includes('"')||s.includes("\n"))?`"${s.replace(/"/g,'""')}"`:s; };
@@ -387,10 +389,130 @@ const Err = ({m}) => m
 const Info = ({ch,c=BL}) =>
   <div style={{padding:"10px 12px",background:"#0a0d15",border:`1px solid ${c}30`,borderRadius:"8px",fontSize:"11px",color:c,lineHeight:"1.7"}}>{ch}</div>;
 
+
+// ── ExpoInfo ──────────────────────────────────────────────────────────────────
+function ExpoInfo({expo, setExpo, customCats, setCustomCats}) {
+  const [nc, sNc] = useState("");
+  const [saved, sSaved] = useState(false);
+  const fileRef = useRef(null);
+
+  const upd = patch => {
+    const next = {...expo, ...patch};
+    setExpo(next);
+    LS.s("hfj_expo", next);
+    sSaved(true);
+    setTimeout(()=>sSaved(false), 1200);
+  };
+
+  const handleLogo = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 500000) { alert("Logo too large — please use an image under 500KB."); return; }
+    const reader = new FileReader();
+    reader.onload = ev => upd({logo: ev.target.result});
+    reader.readAsDataURL(file);
+  };
+
+  const addCat = () => {
+    const t = nc.trim();
+    if (!t || customCats.includes(t)) return;
+    const next = [...customCats, t];
+    setCustomCats(next);
+    LS.s("hfj_cats", next);
+    sNc("");
+  };
+
+  const delCat = c => {
+    const next = customCats.filter(x=>x!==c);
+    setCustomCats(next);
+    LS.s("hfj_cats", next);
+  };
+
+  return <div className="fi" style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+    <Info c={A} ch={<>Fill in your expo details — they appear in the <strong>PDF report header</strong> and personalise this app for your event.</>}/>
+
+    {/* Expo / Judge Info */}
+    <Crd ch={
+      <><Lbl ch="EXPO / EVENT DETAILS"/>
+      <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+        <div>
+          <div style={{fontSize:"10px",color:DIM,marginBottom:"4px"}}>Hackathon / Expo Name</div>
+          <Fi value={expo.expoName||""} onChange={e=>upd({expoName:e.target.value})}
+            placeholder="e.g. HackFusion 2026"/>
+        </div>
+        <div>
+          <div style={{fontSize:"10px",color:DIM,marginBottom:"4px"}}>Judge Name</div>
+          <Fi value={expo.judgeName||""} onChange={e=>upd({judgeName:e.target.value})}
+            placeholder="e.g. K. Krishnamurthy"/>
+        </div>
+        <div>
+          <div style={{fontSize:"10px",color:DIM,marginBottom:"4px"}}>Judge Designation / Organisation</div>
+          <Fi value={expo.judgeOrg||""} onChange={e=>upd({judgeOrg:e.target.value})}
+            placeholder="e.g. Director of Innovation, Brainovision"/>
+        </div>
+        {saved && <div style={{fontSize:"10px",color:GR,textAlign:"center"}}>✓ Auto-saved</div>}
+      </div>
+      </>
+    }/>
+
+    {/* Logo Upload */}
+    <Crd ch={
+      <><Lbl ch="EXPO LOGO (optional)"/>
+      <div style={{fontSize:"10px",color:DIM,marginBottom:"10px"}}>Appears in PDF report header. Max 500KB — PNG/JPG/SVG.</div>
+      {expo.logo && <div style={{textAlign:"center",marginBottom:"10px"}}>
+        <img src={expo.logo} alt="Logo" style={{maxHeight:"80px",maxWidth:"100%",objectFit:"contain",borderRadius:"6px",border:`1px solid ${BD}`}}/>
+      </div>}
+      <div style={{display:"flex",gap:"8px"}}>
+        <Btn v="outline" full ch={expo.logo?"↺ REPLACE LOGO":"📷 UPLOAD LOGO"} onClick={()=>fileRef.current.click()}/>
+        {expo.logo && <Btn v="danger" s={{padding:"10px 12px"}} ch="✕" onClick={()=>upd({logo:""})}/>}
+      </div>
+      <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleLogo}/>
+      </>
+    }/>
+
+    {/* Custom Categories */}
+    <Crd ch={
+      <><Lbl ch="CUSTOM STALL CATEGORIES (optional)"/>
+      <div style={{fontSize:"10px",color:DIM,marginBottom:"10px"}}>
+        Add your own categories below. If none added, the default HackFusion categories are used.
+      </div>
+      {customCats.length>0 && <div style={{marginBottom:"10px"}}>
+        {customCats.map(c =>
+          <div key={c} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
+            padding:"8px 10px",background:"#090b12",borderRadius:"6px",marginBottom:"5px",
+            border:`1px solid ${BD}`}}>
+            <span style={{fontSize:"12px",color:TX}}>{c}</span>
+            <button onClick={()=>delCat(c)} style={{
+              background:"none",border:"none",color:RD,cursor:"pointer",fontSize:"16px",padding:"0 4px"
+            }}>✕</button>
+          </div>
+        )}
+        <div style={{fontSize:"9px",color:DIM,marginTop:"4px",textAlign:"center"}}>
+          {customCats.length} custom categor{customCats.length===1?"y":"ies"} · these replace the defaults
+        </div>
+      </div>}
+      {customCats.length===0 && <div style={{padding:"8px",background:"#090b12",borderRadius:"6px",marginBottom:"10px",
+        fontSize:"10px",color:DIM,textAlign:"center"}}>
+        Using default categories (HW/IoT, Robotics, AI/ML, GreenTech, Agrotech, Software, Open)
+      </div>}
+      <div style={{display:"flex",gap:"8px"}}>
+        <Fi value={nc} onChange={e=>sNc(e.target.value)} placeholder="e.g. FinTech / Blockchain"
+          onKeyDown={e=>e.key==="Enter"&&addCat()} s={{flex:1}}/>
+        <Btn ch="+ ADD" onClick={addCat} s={{padding:"10px 12px",whiteSpace:"nowrap"}}/>
+      </div>
+      {customCats.length>0 && <div style={{marginTop:"8px"}}>
+        <Btn v="danger" full ch="RESET TO DEFAULT CATEGORIES"
+          onClick={()=>{setCustomCats([]);LS.s("hfj_cats",[]);}}/>
+      </div>}
+      </>
+    }/>
+  </div>;
+}
+
 // ── Teams ─────────────────────────────────────────────────────────────────────
-function Teams({teams,set,go}) {
+function Teams({teams,set,go,cats=CATS}) {
   const [n,sN] = useState("");
-  const [cat,sCat] = useState(CATS[0]);
+  const [cat,sCat] = useState(cats[0]);
   const [d,sD] = useState("");
   const [eid,sE] = useState(null);
 
@@ -424,7 +546,7 @@ function Teams({teams,set,go}) {
         <Fi value={n} onChange={e=>sN(e.target.value)} placeholder="Team / Project name"
           onKeyDown={e=>e.key==="Enter"&&save()}/>
         <Fsl value={cat} onChange={e=>sCat(e.target.value)}
-          ch={CATS.map(c=><option key={c}>{c}</option>)}/>
+          ch={cats.map(c=><option key={c}>{c}</option>)}/>
         <Fta rows={2} value={d} onChange={e=>sD(e.target.value)} placeholder="Brief description (optional)"/>
         <div style={{display:"flex",gap:"8px"}}>
           <Btn ch={eid?"✓ UPDATE":"+ ADD TEAM"} onClick={save}/>
@@ -703,7 +825,7 @@ function Judge({team,upd,back,apiKey}) {
 }
 
 // ── Results ───────────────────────────────────────────────────────────────────
-function Results({teams,set,apiKey,go}) {
+function Results({teams,set,apiKey,go,expo={}}) {
   const [op,sOp] = useState(null);
   const ranked = [...teams].filter(t=>t.finalScores&&wt(t.finalScores)>0)
     .sort((a,b)=>wt(b.finalScores)-wt(a.finalScores));
@@ -729,13 +851,13 @@ function Results({teams,set,apiKey,go}) {
           <div>📄 PDF REPORT</div>
           <div style={{fontSize:"9px",opacity:0.7}}>Print / Save</div>
         </span>}
-        onClick={()=>xPDF(teams)}/>
+        onClick={()=>xPDF(teams,expo)}/>
       <Btn v="outline" s={{width:"100%",borderColor:BL,color:BL,padding:"12px 8px"}}
         ch={<span style={{display:"block",textAlign:"center"}}>
           <div>📊 CSV / EXCEL</div>
           <div style={{fontSize:"9px",opacity:0.7}}>Download</div>
         </span>}
-        onClick={()=>xCSV(teams)}/>
+        onClick={()=>xCSV(teams,expo)}/>
     </div>}
 
     {/* Leaderboard */}
@@ -803,7 +925,7 @@ function Results({teams,set,apiKey,go}) {
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
-function Settings({apiKey,onSave,teams,set}) {
+function Settings({apiKey,onSave,teams,set,expo={}}) {
   const [k,sK] = useState(apiKey||"");
   const [show,sShow] = useState(false);
   const [saved,sSaved] = useState(false);
@@ -856,8 +978,8 @@ function Settings({apiKey,onSave,teams,set}) {
     <Crd ch={
       <><Lbl ch="EXPORT DATA"/>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"8px"}}>
-        <Btn v="outline" s={{width:"100%",borderColor:GR,color:GR}} ch="📄 PDF REPORT" onClick={()=>xPDF(teams)}/>
-        <Btn v="outline" s={{width:"100%",borderColor:BL,color:BL}} ch="📊 CSV EXPORT" onClick={()=>xCSV(teams)}/>
+        <Btn v="outline" s={{width:"100%",borderColor:GR,color:GR}} ch="📄 PDF REPORT" onClick={()=>xPDF(teams,expo)}/>
+        <Btn v="outline" s={{width:"100%",borderColor:BL,color:BL}} ch="📊 CSV EXPORT" onClick={()=>xCSV(teams,expo)}/>
       </div>
       <div style={{fontSize:"9px",color:DIM}}>PDF: Full scorecard · CSV: All data for Excel / Google Sheets</div>
       </>
@@ -889,11 +1011,13 @@ function Settings({apiKey,onSave,teams,set}) {
 // ── Root App ──────────────────────────────────────────────────────────────────
 function App() {
   const [teams, setTmsRaw] = useState(() => LS.g("hfj_teams", []));
-  const [screen, sSc] = useState("teams");
+  const [screen, sSc] = useState("info");
   const [aid, sAid] = useState(null);
   const [apiKey, sApiKey] = useState(() => {
     const k = LS.g("hfj_apikey",""); if(k) sKey(k); return k;
   });
+  const [expo, setExpo] = useState(() => LS.g("hfj_expo", {}));
+  const [customCats, setCustomCats] = useState(() => LS.g("hfj_cats", []));
 
   const setTeams = useCallback(fn => {
     setTmsRaw(prev => {
@@ -913,7 +1037,9 @@ function App() {
   const v = teams.filter(t=>t.visited).length;
   const f = teams.filter(t=>t.finalized).length;
 
+  const activeCats = customCats.length > 0 ? customCats : CATS;
   const NAV = [
+    {id:"info",    i:"🎪", l:"INFO"},
     {id:"teams",   i:"👥", l:"TEAMS"},
     {id:"judge",   i:"⚖️",  l:"JUDGE"},
     {id:"results", i:"🏆", l:"RESULTS"},
@@ -929,7 +1055,7 @@ function App() {
       position:"sticky",top:0,zIndex:50
     }}>
       <div>
-        <div style={{fontSize:"9px",color:A,letterSpacing:"3px"}}>◈ HACKFUSION 2026</div>
+        <div style={{fontSize:"9px",color:A,letterSpacing:"3px"}}>◈ {expo.expoName||"HACKFUSION 2026"}</div>
         <div style={{fontSize:"17px",fontWeight:"bold",color:"#fff"}}>
           {screen==="judge"&&at ? at.name : "Judge Pro ⚖️"}
         </div>
@@ -962,7 +1088,8 @@ function App() {
 
     {/* Content */}
     <div style={{padding:"14px 14px 100px"}}>
-      {screen==="teams" && <Teams teams={teams} set={setTeams} go={go}/>}
+      {screen==="info" && <ExpoInfo expo={expo} setExpo={setExpo} customCats={customCats} setCustomCats={setCustomCats}/>}
+      {screen==="teams" && <Teams teams={teams} set={setTeams} go={go} cats={activeCats}/>}
 
       {screen==="judge" && (at
         ? <Judge team={at} upd={p=>upd(aid,p)} back={()=>{sSc("teams");sAid(null);}} apiKey={apiKey}/>
@@ -987,8 +1114,8 @@ function App() {
           </div>
       )}
 
-      {screen==="results" && <Results teams={teams} set={setTeams} apiKey={apiKey} go={go}/>}
-      {screen==="settings" && <Settings apiKey={apiKey} onSave={hKey} teams={teams} set={setTeams}/>}
+      {screen==="results" && <Results teams={teams} set={setTeams} apiKey={apiKey} go={go} expo={expo}/>}
+      {screen==="settings" && <Settings apiKey={apiKey} onSave={hKey} teams={teams} set={setTeams} expo={expo}/>}
     </div>
   </div>;
 }
